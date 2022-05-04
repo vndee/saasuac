@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       PGDATA: /data/postgres
     volumes:
-       - ./data/postgres:/data/postgres
+       - postgres:/data/postgres
     ports:
       - "5432:5432"
     networks:
@@ -24,7 +24,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
-       - ./data/pgadmin:/var/lib/pgadmin
+       - pgadmin:/var/lib/pgadmin
 
     ports:
       - "${PGADMIN_PORT:-5050}:80"
@@ -35,4 +35,8 @@ services:
 networks:
   database:
     external: true
+
+volumes:
+  postgres:
+  pgadmin:
 
