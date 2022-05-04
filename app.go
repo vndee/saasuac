@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"config"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -11,10 +10,18 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/qinains/fastergoding"
+	"github.com/vndee/saasuac/config"
+	"github.com/vndee/saasuac/router"
 )
 
 func main() {
 	fastergoding.Run()
+
+	//err := model.CreateSchema(&config.PostgreSQLConnection)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//log.Println("Created database schema")
 
 	app := fiber.New()
 	app.Use(requestid.New())
@@ -26,6 +33,8 @@ func main() {
 	app.Use(cors.New())
 	app.Get("/dashboard", monitor.New())
 
-	fmt.Println("Hello, World")		
-	log.Fatal(app.Listen(fmt.Sprint(":%s", config.Config("PORT"))))
+	router.SetupRoutes(app)
+
+	bindingPort := fmt.Sprintf(":%s", config.Config("PORT"))
+	log.Fatal(app.Listen(bindingPort))
 }
