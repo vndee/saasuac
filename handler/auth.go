@@ -13,6 +13,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func JwtTokenGeneration(user model.User) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["email"] = user.Email
+	claims["user_id"] = user.Id
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	t, err := token.SignedString([]byte(config.Config("JWT_SECRET")))
+	return t, err
+}
+
 func Register(ctx *fiber.Ctx) error {
 	params := new(model.RegisterParams)
 	if err := ctx.BodyParser(params); err != nil {
@@ -63,11 +73,7 @@ func Register(ctx *fiber.Ctx) error {
 	log.Println("Succesfully created user with email: ", user.Email)
 
 	// generate jwt token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["email"] = user.Email
-	claims["exp"] = time.Now().Add(time.Minute * 5).Unix()
-	t, err := token.SignedString([]byte(config.Config("JWT_SECRET")))
+	t, err := JwtTokenGeneration(user)
 	if err != nil {
 		log.Println(err)
 		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ReturnParams{
@@ -77,4 +83,54 @@ func Register(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(model.ReturnParams{"success", "Succesfully registered!", t})
+}
+
+func Login(ctx *fiber.Ctx) error {
+	params := new(model.LoginParams)
+	if err := ctx.BodyParser(params); err != nil {
+		log.Panic(err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.ReturnParams{
+			"error",
+			"Error on login request",
+			nil})
+	}
+
+	user := model.User{Email: params.Email}
+	exist, err := model.ExistsUserByPrimaryKey(&config.PostgreSQLConnection, user)
+	if exist == false {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(model.ReturnParams{"success", "Email not found", nil})
+	}
+
+	user, err = model.SelectUserByPrimaryKey(&config.PostgreSQLConnection, user)
+	if err != nil {
+		log.Panic(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ReturnParams{"error",
+			"Internal Server Error",
+			nil})
+	}
+
+	if !utils.CheckPasswordHash(params.Password, user.Password) {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(model.ReturnParams{"success", "Invalid password", nil})
+	}
+
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ReturnParams{
+			"error",
+			"Internal Server Error",
+			nil})
+	}
+
+	t, err := JwtTokenGeneration(user)
+	if err != nil {
+		log.Panic(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ReturnParams{
+			"error",
+			"Internal Server Error",
+			nil})
+	}
+
+	return ctx.Status(fiber.StatusAccepted).JSON(model.ReturnParams{
+		"success",
+		"Succesfully login",
+		t})
 }
