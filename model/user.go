@@ -8,15 +8,15 @@ import (
 )
 
 type User struct {
-	tableName struct{} `pg:"User"`
-	Id        int64    `pg:"user_id"`
+	tableName struct{} `pg:"Users"`
+	Id        string   `pg:"user_id"`
 	Name      string   `pg:"user_name"`
-	Emails    string   `pg:"email,pk"`
+	Email     string   `pg:"email,pk"`
 	Password  string   `pg:"password"`
 }
 
 func (u User) String() string {
-	return fmt.Sprintf("User<%d %s %v>", u.Id, u.Name, u.Emails)
+	return fmt.Sprintf("User<%d %s %s %s>", u.Id, u.Name, u.Email, u.Password)
 }
 
 func ExistsUserByPrimaryKey(pg *pg.DB, user User) (bool, error) {
@@ -25,12 +25,12 @@ func ExistsUserByPrimaryKey(pg *pg.DB, user User) (bool, error) {
 }
 
 func InsertUser(pg *pg.DB, user User) (orm.Result, error) {
-	id, err := pg.Model(&user).Returning("id").Insert()
+	id, err := pg.Model(&user).Insert()
 	return id, err
 }
 
 func InsertUserBatch(pg *pg.DB, users []User) (orm.Result, error) {
-	id, err := pg.Model(&users).Returning("id").Insert()
+	id, err := pg.Model(&users).Insert()
 	return id, err
 }
 

@@ -19,9 +19,9 @@ func main() {
 
 	//err := model.CreateSchema(&config.PostgreSQLConnection)
 	//if err != nil {
-	//	panic(err)
+	//	log.Panic(err)
 	//}
-	//log.Println("Created database schema")
+	log.Println("Created database schema")
 
 	app := fiber.New()
 	app.Use(requestid.New())
