@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"fmt"
 	"log"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/vndee/saasuac/config"
@@ -45,10 +46,12 @@ func Register(ctx *fiber.Ctx) error {
 			nil})
 	}
 
-	user.user_id = uuid.New().String()
+	user.Id = uuid.New().String()
 
 	user.Password = string(hashedPassword)
-	id, err := model.InsertUser(&config.PostgreSQLConnection, user)
+
+	// save new user record
+	_, err = model.InsertUser(&config.PostgreSQLConnection, user)
 	if err != nil {
 		log.Panic(err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.ReturnParams{
@@ -56,10 +59,22 @@ func Register(ctx *fiber.Ctx) error {
 			"Bad request",
 			nil})
 	}
-	fmt.Println(id)
-	fmt.Println(user)
-	// save new record of the registered user
 
-	// return jwt token
-	return ctx.Status(fiber.StatusOK).JSON(model.ReturnParams{"success", "ok", nil})
+	log.Println("Succesfully created user with email: ", user.Email)
+
+	// generate jwt token
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["email"] = user.Email
+	claims["exp"] = time.Now().Add(time.Minute * 5).Unix()
+	t, err := token.SignedString([]byte(config.Config("JWT_SECRET")))
+	if err != nil {
+		log.Println(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.ReturnParams{
+			"error",
+			"Internal Server Error",
+			err})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(model.ReturnParams{"success", "Succesfully registered!", t})
 }

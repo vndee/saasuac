@@ -3,6 +3,7 @@ module github.com/vndee/saasuac
 go 1.16
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-pg/pg/v10 v10.10.6
 	github.com/gofiber/fiber/v2 v2.32.0
 	github.com/google/uuid v1.3.0
